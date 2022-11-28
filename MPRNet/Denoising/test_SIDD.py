@@ -26,7 +26,7 @@ parser.add_argument('--input_dir', default='./Datasets/SIDD/test/', type=str, he
 parser.add_argument('--result_dir', default='./results/SIDD/', type=str, help='Directory for results')
 parser.add_argument('--weights', default='./pretrained_models/model_denoising.pth', type=str, help='Path to weights')
 parser.add_argument('--gpus', default='1', type=str, help='CUDA_VISIBLE_DEVICES')
-parser.add_argument('--save_images', action='store_true', help='Save denoised images in result directory')
+parser.add_argument('--save_images', action='store_true', help='Save ddpm-denoised images in result directory')
 
 args = parser.parse_args()
 
@@ -66,5 +66,5 @@ with torch.no_grad():
                 save_file = os.path.join(result_dir_img, '%04d_%02d.png'%(i+1,k+1))
                 utils.save_img(save_file, img_as_ubyte(restored_patch))
 
-# save denoised data
+# save ddpm-denoised data
 sio.savemat(os.path.join(result_dir, 'Idenoised.mat'), {"Idenoised": restored,})
