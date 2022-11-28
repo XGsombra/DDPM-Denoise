@@ -3,10 +3,7 @@ from pytorch_diffusion import Diffusion
 import numpy as np
 import skimage.io as io
 import matplotlib.pyplot as plt
-
-def calc_psnr(x, gt):
-    out = 10 * np.log10(1 / ((x - gt)**2).mean().item())
-    return out
+from util import calc_psnr
 
 img = io.imread('samples/church.jpg').astype(float)/255
 height, width, _ = img.shape

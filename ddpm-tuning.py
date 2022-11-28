@@ -6,17 +6,7 @@ import matplotlib.pyplot as plt
 from natsort import natsorted
 from glob import glob
 import os
-
-# define the constants
-CHANNEL_NUM = 3
-SIZE = 256
-CLEAN_DIR = './samples/clean'
-NOISY_DIR = './samples/noisy'
-DENOISED_DIR = 'samples/ddpm-denoised'
-MODEL = 'lsun_church'
-DEVICE = 'cuda:0' if torch.cuda.is_available() else "cpu"
-SAVE_NOISY = False  # True when saving noisy images, False when denoising
-GAUSSIAN_NOISE = True  # True if noises are Gaussian-distributed, False if Poisson-distributed
+from constants import CHANNEL_NUM, SIZE, CLEAN_DIR, NOISY_DIR, MODEL, DEVICE, SAVE_NOISY, GAUSSIAN_NOISE, LEVELS
 
 
 def calc_psnr(x, gt):
@@ -36,14 +26,10 @@ clean_images = np.zeros((image_num, SIZE, SIZE, CHANNEL_NUM))
 for i in range(image_num):
     clean_images[i] = io.imread(clean_image_paths[i]).astype(float) / 255
 
-# Initialize noise levels
-print("Initiating Noise Levels...")
-levels = np.arange(1, 10) * 0.1
-
 opt_curr_steps = []
 opt_step_nums = []
 
-for level in levels:
+for level in LEVELS:
     opt_sig_curr_steps = []
     opt_sig_step_nums = []
     if SAVE_NOISY:
@@ -56,7 +42,7 @@ for level in levels:
         # Save noisy images
         for i in range(image_num):
             plt.imsave(
-                os.path.join(NOISY_DIR, f"{i}-{round(level, 1)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg"),
+                os.path.join(NOISY_DIR, f"{i}-{round(level, 2)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg"),
                 np.clip(noisy_images[i], a_min=0., a_max=1.)
             )
     else:
@@ -64,7 +50,7 @@ for level in levels:
         noisy_images = np.zeros_like(clean_images)
         for i in range(image_num):
             noisy_images[i] = io.imread(
-                os.path.join(NOISY_DIR, f"{i}-{round(level, 1)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg")
+                os.path.join(NOISY_DIR, f"{i}-{round(level, 2)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg")
             ).astype(float) / 255
             plt.imshow(noisy_images[i])
             plt.show()
@@ -108,4 +94,3 @@ for level in levels:
 # Save the parameters
 np.savetxt("curr_steps.csv", np.array(opt_curr_steps), delimiter=',')
 np.savetxt("step_nums.csv", np.array(opt_step_nums), delimiter=',')
-
