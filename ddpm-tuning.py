@@ -6,12 +6,8 @@ import matplotlib.pyplot as plt
 from natsort import natsorted
 from glob import glob
 import os
+from util import calc_psnr_hvsm, calc_ssim
 from constants import CHANNEL_NUM, SIZE, CLEAN_DIR, NOISY_DIR, MODEL, DEVICE, SAVE_NOISY, GAUSSIAN_NOISE, LEVELS
-
-
-def calc_psnr(x, gt):
-    out = 10 * np.log10(1 / ((x - gt) ** 2).mean().item())
-    return out
 
 
 # Load the DDPM model
@@ -27,11 +23,12 @@ for i in range(image_num):
     clean_images[i] = io.imread(clean_image_paths[i]).astype(float) / 255
 
 opt_curr_steps = []
-opt_step_nums = []
+
+LEVELS = [0.2]
+manual_tuning = True
 
 for level in LEVELS:
     opt_sig_curr_steps = []
-    opt_sig_step_nums = []
     if SAVE_NOISY:
         # Generate noisy images and save them to NOISY_DIR
         noisy_images = np.copy(clean_images)
@@ -48,49 +45,52 @@ for level in LEVELS:
     else:
         # Load noising image previously saved and convert to tensor
         noisy_images = np.zeros_like(clean_images)
+        print("Loading noisy images...")
         for i in range(image_num):
             noisy_images[i] = io.imread(
                 os.path.join(NOISY_DIR, f"{i}-{round(level, 2)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg")
             ).astype(float) / 255
-            plt.imshow(noisy_images[i])
-            plt.show()
         noisy_images = torch.Tensor(noisy_images.transpose([0, 3, 1, 2])).to(DEVICE)
         # Initialize the range
         opt_max_psnr = 0
         opt_curr_step = 0
-        opt_step_num = 0
-        start = int((1 - level) * 100)
+        start = 10
         curr_steps = range(start, start + 100, 5)
+        curr_steps = [125] # 125 16.987 0.44
         # Loop and tune
         for curr_step in curr_steps:
             max_psnr = 0
             step_num = 0
-            while True:
-                # Denoise the noisy image
-                denoised_images = diffusion.denoise(
-                    image_num,
-                    x=noisy_images,
-                    curr_step=curr_step,
-                    n_steps=curr_step + 1
-                ).cpu().numpy().transpose([0, 2, 3, 1])
-                # Calculate and update the maximal PSNR
-                psnr = calc_psnr(clean_images, denoised_images)
-                print(psnr)
-                if psnr > max_psnr:
-                    max_psnr = psnr
-                    step_num += 1
-                else:
-                    # Not doing better, break the loop
-                    break
+            # Denoise the noisy image
+            denoised_images = diffusion.denoise(
+                image_num,
+                x=noisy_images,
+                curr_step=curr_step,
+                n_steps=1000
+            ).cpu().numpy().transpose([0, 2, 3, 1])
+            # Calculate and update the maximal PSNR
+            psnr = 0
+            ssim = 0
+            for i in range(image_num):
+                psnr += calc_psnr_hvsm(denoised_images[i], clean_images[i])
+                ssim += calc_ssim(denoised_images[i], clean_images[i])
+            psnr /= image_num
+            ssim /= image_num
+            if manual_tuning:
+                print(curr_step)
+                print(f"psnr is {psnr}")
+                print(f"ssim is {ssim}")
+                exit()
+            if psnr > max_psnr:
+                max_psnr = psnr
+            else:
+                # Not doing better, break the loop
+                break
             if max_psnr > opt_max_psnr:
                 opt_max_psnr = max_psnr
                 opt_curr_step = curr_step
-                opt_step_num = step_num
         print(f"------------PSNR={max_psnr}------------")
         opt_sig_curr_steps.append(opt_curr_step)
-        opt_sig_step_nums.append(opt_step_num)
         opt_curr_steps.append(opt_sig_curr_steps)
-        opt_step_nums.append(opt_sig_step_nums)
 # Save the parameters
 np.savetxt("curr_steps.csv", np.array(opt_curr_steps), delimiter=',')
-np.savetxt("step_nums.csv", np.array(opt_step_nums), delimiter=',')
