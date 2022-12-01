@@ -24,7 +24,7 @@ for i in range(image_num):
 
 opt_curr_steps = []
 
-LEVELS = [0.2]
+LEVELS = [0.1] # TODO: REMOVE THIS LINE
 manual_tuning = True
 
 for level in LEVELS:
@@ -54,41 +54,46 @@ for level in LEVELS:
         # Initialize the range
         opt_max_psnr = 0
         opt_curr_step = 0
+        opt_step_num = 0
         start = 10
-        curr_steps = range(start, start + 100, 5)
-        curr_steps = [125] # 125 16.987 0.44
+        curr_steps = range(10, 1000, 5)
+        curr_steps = [33]  # todo: remove this line
         # Loop and tune
         for curr_step in curr_steps:
             max_psnr = 0
             step_num = 0
             # Denoise the noisy image
-            denoised_images = diffusion.denoise(
-                image_num,
-                x=noisy_images,
-                curr_step=curr_step,
-                n_steps=1000
-            ).cpu().numpy().transpose([0, 2, 3, 1])
-            # Calculate and update the maximal PSNR
-            psnr = 0
-            ssim = 0
-            for i in range(image_num):
-                psnr += calc_psnr_hvsm(denoised_images[i], clean_images[i])
-                ssim += calc_ssim(denoised_images[i], clean_images[i])
-            psnr /= image_num
-            ssim /= image_num
-            if manual_tuning:
-                print(curr_step)
-                print(f"psnr is {psnr}")
-                print(f"ssim is {ssim}")
-                exit()
-            if psnr > max_psnr:
-                max_psnr = psnr
-            else:
-                # Not doing better, break the loop
-                break
+            while True:
+                denoised_images = diffusion.denoise(
+                    image_num,
+                    x=noisy_images,
+                    curr_step=curr_step,
+                    n_steps=curr_step
+                ).cpu().numpy().transpose([0, 2, 3, 1])
+                # Calculate and update the maximal PSNR
+                psnr = 0
+                ssim = 0
+                for i in range(image_num):
+                    psnr += calc_psnr_hvsm(denoised_images[i], clean_images[i])
+                    ssim += calc_ssim(denoised_images[i], clean_images[i])
+                psnr /= image_num
+                ssim /= image_num
+                if manual_tuning:
+                    print(curr_step)
+                    print(f"psnr is {psnr}")
+                    print(f"ssim is {ssim}")
+                    exit()
+                if psnr > max_psnr:
+                    max_psnr = psnr
+                    curr_step -= 1
+                    step_num += 1
+                else:
+                    # Not doing better, break the loop
+                    break
             if max_psnr > opt_max_psnr:
                 opt_max_psnr = max_psnr
                 opt_curr_step = curr_step
+                opt_step_num = step_num
         print(f"------------PSNR={max_psnr}------------")
         opt_sig_curr_steps.append(opt_curr_step)
         opt_curr_steps.append(opt_sig_curr_steps)

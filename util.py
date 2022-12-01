@@ -75,8 +75,8 @@ if __name__ == "__main__":
     print(calc_ssims(MPRNET_DENOISED_DIR))
     # ssim - {'g': [0.85, 0.77, 0.68, 0.58, 0.5], 'p': [0.74, 0.68, 0.62, 0.54, 0.47]}
 
-    # sigma   curr_step     hvsm      sism
-    # 0.05       15         33.54
-    # 0.1        35         27.71
-    # 0.2        70         22.52     0.78
-    # 0.4        150
+    # sigma   curr_step    n_step   hvsm      sism
+    # 0.05       15                 33.54
+    # 0.1        35                 27.71
+    # 0.2        70                 22.52     0.78
+    # 0.4        125                19.06     0.73
