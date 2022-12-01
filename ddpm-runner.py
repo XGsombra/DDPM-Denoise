@@ -5,18 +5,21 @@ import skimage.io as io
 import matplotlib.pyplot as plt
 from util import calc_psnr_hvsm, calc_ssim
 from constants import DEVICE, DDPM_DENOISED_DIR
+import time
 
 diffusion = Diffusion.from_pretrained("lsun_church")
-# for img_id in range(5):
-for img_id in [0]:
-    sigma = 0.05
-    noise_type = 'g'
+total_time = 0
+sigma = 0.1
+noise_type = 'g'
+for img_id in range(5):
+# for img_id in [0]:
     clean = io.imread(f"./samples/clean/{img_id}.jpg").astype(float) / 255
     noisy_img = io.imread(f"./samples/noisy/{img_id}-{sigma}-{noise_type}.jpg").astype(float) / 255
-
     x = torch.Tensor([noisy_img.transpose([2, 0, 1])]).to(DEVICE)
-    curr_step = 12
+    curr_step = 33
+    start_time = time.time()
     denoised = diffusion.denoise(1, x=x, curr_step=curr_step, n_steps=1000)[0, ...].cpu().detach().numpy().transpose([1,2,0])
+    total_time += time.time()-start_time
     print(curr_step)
     print(calc_psnr_hvsm(denoised, clean))
     print(calc_ssim(denoised, clean))
@@ -28,8 +31,8 @@ for img_id in [0]:
     # 0.4  - 14.455494322395255    0.2073370738246524
     # 0.8  - 10.334581997747138    0.10917886070032523
 
-    # plt.imsave(f"{DDPM_DENOISED_DIR}/{img_id}-{sigma}-{noise_type}.png", np.clip(denoised, a_min=0., a_max=1.))
-
+    plt.imsave(f"{DDPM_DENOISED_DIR}/{img_id}-{sigma}-{noise_type}.png", np.clip(denoised, a_min=0., a_max=1.))
+print(f"sigma-{sigma}, time is {total_time / 5}")
 # img_id = 0
 # sigma = 0.1
 # noise_type = 'g'
@@ -53,9 +56,7 @@ for img_id in [0]:
 # print(f"total step is {total_step_count}")
 # plt.imshow(np.clip(x, a_min=0., a_max=1.)[0, ...].cpu().detach().numpy().transpose([1,2,0]))
 # plt.show()
-#
-# #175 11.98347038387504
-# 0.5649341
+
 
 
 
