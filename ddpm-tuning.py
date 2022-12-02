@@ -7,8 +7,8 @@ from natsort import natsorted
 from glob import glob
 import os
 from util import calc_psnr_hvsm, calc_ssim
-from constants import CHANNEL_NUM, SIZE, CLEAN_DIR, NOISY_DIR, MODEL, DEVICE, SAVE_NOISY, GAUSSIAN_NOISE, LEVELS
-
+from constants import CHANNEL_NUM, SIZE, CLEAN_DIR, NOISY_DIR, MODEL, DEVICE, SAVE_NOISY, GAUSSIAN_NOISE, LEVELS, \
+    CLEAN_VAL_DIR, NOISY_VAL_DIR
 
 # Load the DDPM model
 print("Loading Model...")
@@ -27,7 +27,6 @@ opt_step_nums = []
 
 manual_tuning = False
 manual_tuning = True
-LEVELS = [0.4]
 
 for level in LEVELS:
     opt_sig_curr_steps = []
@@ -42,7 +41,7 @@ for level in LEVELS:
         # Save noisy images
         for i in range(image_num):
             plt.imsave(
-                os.path.join(NOISY_DIR, f"{i}-{round(level, 2)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg"),
+                os.path.join(NOISY_DIR, f"{i+5}-{round(level, 2)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg"),
                 np.clip(noisy_images[i], a_min=0., a_max=1.)
             )
     else:
@@ -65,12 +64,13 @@ for level in LEVELS:
             max_psnr = 0
             step_num = 0
             # Denoise the noisy image
+            denoised_images = noisy_images
             while True:
                 denoised_images = diffusion.denoise(
                     image_num,
-                    x=noisy_images,
+                    x=denoised_images,
                     curr_step=curr_step,
-                    n_steps=0
+                    n_steps=1
                 ).cpu().numpy().transpose([0, 2, 3, 1])
                 # Calculate and update the maximal PSNR
                 psnr = 0
@@ -103,4 +103,4 @@ for level in LEVELS:
     opt_step_nums.append(opt_sig_step_nums)
 # Save the parameters
 np.savetxt("curr_steps.csv", np.array(opt_curr_steps), delimiter=',')
-np.savetxt("step_nums.csv", np.array(opt_step_num), delimiter=',')
+np.savetxt("step_nums.csv", np.array(opt_step_nums), delimiter=',')
