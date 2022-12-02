@@ -23,12 +23,15 @@ for i in range(image_num):
     clean_images[i] = io.imread(clean_image_paths[i]).astype(float) / 255
 
 opt_curr_steps = []
+opt_step_nums = []
 
-LEVELS = [0.4] # TODO: REMOVE THIS LINE
+manual_tuning = False
 manual_tuning = True
+LEVELS = [0.4]
 
 for level in LEVELS:
     opt_sig_curr_steps = []
+    opt_sig_step_nums = []
     if SAVE_NOISY:
         # Generate noisy images and save them to NOISY_DIR
         noisy_images = np.copy(clean_images)
@@ -57,7 +60,6 @@ for level in LEVELS:
         opt_step_num = 0
         start = 10
         curr_steps = range(10, 1000, 5)
-        curr_steps = [125]  # todo: remove this line
         # Loop and tune
         for curr_step in curr_steps:
             max_psnr = 0
@@ -68,7 +70,7 @@ for level in LEVELS:
                     image_num,
                     x=noisy_images,
                     curr_step=curr_step,
-                    n_steps=curr_step
+                    n_steps=0
                 ).cpu().numpy().transpose([0, 2, 3, 1])
                 # Calculate and update the maximal PSNR
                 psnr = 0
@@ -96,6 +98,9 @@ for level in LEVELS:
                 opt_step_num = step_num
         print(f"------------PSNR={max_psnr}------------")
         opt_sig_curr_steps.append(opt_curr_step)
-        opt_curr_steps.append(opt_sig_curr_steps)
+        opt_sig_step_nums.append(opt_step_num)
+    opt_curr_steps.append(opt_sig_curr_steps)
+    opt_step_nums.append(opt_sig_step_nums)
 # Save the parameters
 np.savetxt("curr_steps.csv", np.array(opt_curr_steps), delimiter=',')
+np.savetxt("step_nums.csv", np.array(opt_step_num), delimiter=',')
