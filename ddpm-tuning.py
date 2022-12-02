@@ -24,7 +24,7 @@ for i in range(image_num):
 
 opt_curr_steps = []
 
-LEVELS = [0.1] # TODO: REMOVE THIS LINE
+LEVELS = [0.4] # TODO: REMOVE THIS LINE
 manual_tuning = True
 
 for level in LEVELS:
@@ -57,7 +57,7 @@ for level in LEVELS:
         opt_step_num = 0
         start = 10
         curr_steps = range(10, 1000, 5)
-        curr_steps = [33]  # todo: remove this line
+        curr_steps = [125]  # todo: remove this line
         # Loop and tune
         for curr_step in curr_steps:
             max_psnr = 0
@@ -79,7 +79,7 @@ for level in LEVELS:
                 psnr /= image_num
                 ssim /= image_num
                 if manual_tuning:
-                    print(curr_step)
+                    print(curr_step, level)
                     print(f"psnr is {psnr}")
                     print(f"ssim is {ssim}")
                     exit()
