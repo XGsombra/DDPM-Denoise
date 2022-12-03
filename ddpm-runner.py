@@ -13,8 +13,8 @@ noise_type = 'g'
 levels = [0.05, 0.1, 0.2, 0.4]
 level_to_curr_step = {0.05: 15, 0.1: 33, 0.2: 69, 0.4: 120}
 for level in levels:
-    for img_id in range(5, 6):
-        clean = io.imread(f"./samples/clean/{img_id}.jpg").astype(float) / 255
+    for img_id in range(5, 8):
+        clean = io.imread(f"./samples/clean/validation/{img_id}.jpg").astype(float) / 255
         noisy_img = io.imread(f"./samples/noisy/validation/{img_id}-{level}-{noise_type}.jpg").astype(float) / 255
         x = torch.Tensor([noisy_img.transpose([2, 0, 1])]).to(DEVICE)
         curr_step = level_to_curr_step[level]
