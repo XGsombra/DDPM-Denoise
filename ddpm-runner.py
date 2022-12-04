@@ -13,6 +13,8 @@ noise_type = 'g'
 levels = [0.05, 0.1, 0.2, 0.4]
 level_to_curr_step = {0.05: 15, 0.1: 33, 0.2: 69, 0.4: 120}
 for level in levels:
+    if level != 0.4:
+        continue
     for img_id in range(5, 8):
         clean = io.imread(f"./samples/clean/validation/{img_id}.jpg").astype(float) / 255
         noisy_img = io.imread(f"./samples/noisy/validation/{img_id}-{level}-{noise_type}.jpg").astype(float) / 255
@@ -25,7 +27,7 @@ for level in levels:
         print(calc_psnr_hvsm(denoised, clean))
         print(calc_ssim(denoised, clean))
 
-        plt.imsave(f"{DDPM_DENOISED_DIR}/{img_id}-{level}-{noise_type}.png", np.clip(denoised, a_min=0., a_max=1.))
+        # plt.imsave(f"{DDPM_DENOISED_DIR}/{img_id}-{level}-{noise_type}.png", np.clip(denoised, a_min=0., a_max=1.))
     print(f"sigma-{level}, time is {total_time / 5}")
 
 # sigma-0.05, time is 1.6719985008239746
