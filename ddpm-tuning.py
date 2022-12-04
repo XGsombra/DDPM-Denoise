@@ -8,7 +8,7 @@ from glob import glob
 import os
 from util import calc_psnr_hvsm, calc_ssim
 from constants import CHANNEL_NUM, SIZE, CLEAN_DIR, NOISY_DIR, MODEL, DEVICE, SAVE_NOISY, GAUSSIAN_NOISE, LEVELS, \
-    CLEAN_VAL_DIR, NOISY_VAL_DIR
+    CLEAN_VAL_DIR, NOISY_VAL_DIR, LAMBDA
 
 # Load the DDPM model
 print("Loading Model...")
@@ -34,10 +34,9 @@ for level in LEVELS:
     if SAVE_NOISY:
         # Generate noisy images and save them to NOISY_DIR
         noisy_images = np.copy(clean_images)
-        if GAUSSIAN_NOISE:
-            noisy_images += level * np.random.randn(image_num, SIZE, SIZE, CHANNEL_NUM)
-        else:
-            noisy_images += np.random.poisson(level, (image_num, SIZE, SIZE, CHANNEL_NUM))
+        noisy_images += level * np.random.randn(image_num, SIZE, SIZE, CHANNEL_NUM)
+        if not GAUSSIAN_NOISE:
+            noisy_images += np.random.poisson(LAMBDA, (image_num, SIZE, SIZE, CHANNEL_NUM))
         # Save noisy images
         for i in range(image_num):
             plt.imsave(

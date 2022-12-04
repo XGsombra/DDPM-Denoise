@@ -171,17 +171,24 @@ level_to_curr_step = {0.05: 15, 0.1: 33, 0.2: 69, 0.4: 120}
 #     ax.grid(True)
 #     plt.savefig("ssim-curr-tune.png")
 
-# ----------------------------- Tuning sigma = 0.8 -----------------------------
+# ----------------------------- Tuning for one sigma -----------------------------
 # psnr_result = []
 # ssim_result = []
-# level = 0.8
-# tune_range = range(120, 1001, 10)
+# level = 2
+# start = 150
+# end = 300
+# tune_step = 5
+# tune_range = range(start, end+1, tune_step)
 # for curr_step in tune_range:
 #     psnr = 0
 #     ssim = 0
 #     for img_id in range(5):
 #         clean = io.imread(f"./samples/clean/{img_id}.jpg").astype(float) / 255
-#         noisy_img = io.imread(f"./samples/noisy/{img_id}-{level}-{noise_type}.jpg").astype(float) / 255
+#         # noisy_img = io.imread(f"./samples/noisy/{img_id}-{level}-{noise_type}.jpg").astype(float) / 255
+#         noisy_img = np.clip(clean + level * np.random.randn(256, 256, 3), a_min=0., a_max=1.)
+#         actual_noise = noisy_img - clean
+#         print(np.std(actual_noise))
+#         print(np.mean(actual_noise))
 #         x = torch.Tensor([noisy_img.transpose([2, 0, 1])]).to(DEVICE)
 #         denoised = diffusion.denoise(1, x=x, curr_step=curr_step, n_steps=curr_step)[0, ...].cpu().detach().numpy().transpose([1,2,0])
 #         psnr += calc_psnr_hvsm(denoised, clean)
@@ -190,20 +197,20 @@ level_to_curr_step = {0.05: 15, 0.1: 33, 0.2: 69, 0.4: 120}
 #     ssim_result.append(ssim / 5)
 #
 #     fig, ax = plt.subplots()
-#     ax.plot(range(120, curr_step+1, 10), psnr_result, label=f"sigma={level}")
+#     ax.plot(range(start, curr_step+1, tune_step), psnr_result, label=f"sigma={level}")
 #     ax.legend()
 #     ax.set_xlabel("Starting Step Number")
 #     ax.set_ylabel("PSNR-HVS-M (dB)")
 #     ax.grid(True)
-#     plt.savefig("psnr-curr-tune-0.8.png")
+#     plt.savefig("psnr-curr-tune-0.3.png")
 #
 #     fig, ax = plt.subplots()
-#     ax.plot(range(120, curr_step+1, 10), ssim_result, label=f"sigma={level}")
+#     ax.plot(range(start, curr_step+1, tune_step), ssim_result, label=f"sigma={level}")
 #     ax.legend()
 #     ax.set_xlabel("Starting Step Number")
 #     ax.set_ylabel("SSIM")
 #     ax.grid(True)
-#     plt.savefig("ssim-curr-tune-0.8.png")
+#     plt.savefig("ssim-curr-tune-0.3.png")
 
     # s_c is 155 for sigma=0.8
 
@@ -221,49 +228,61 @@ level_to_curr_step = {0.05: 15, 0.1: 33, 0.2: 69, 0.4: 120}
 # clean_images = io.imread(image_path).astype(float) / 255
 # plt.imsave(f"{image_path[:-4]}-cropped.jpg", clean_images[120:184, 70:132])
 
-# ----------------------------- Interpolation -----------------------------
-sigmas = [0.05, 0.1, 0.2, 0.4, 0.8]
-curr_steps = [15, 33, 69, 120, 155]
-sigma2curr_step = interpolate.splrep(sigmas, curr_steps)
-sigma_space = np.linspace(0.01, 1, 100)
+# ----------------------------- Interpolation vs closed form -----------------------------
+
+betas = np.linspace(0.0001, 0.02, 1000)
+alphas = 1.0-betas
+alphas_cumprod = np.cumprod(alphas, axis=0)
+stds = np.sqrt(1-alphas_cumprod)
+
+sigmas = [0.05, 0.1, 0.2, 0.4]
+curr_steps = [15, 33, 69, 120]
+sigma2curr_step = interpolate.interp1d(sigmas, curr_steps)
+sigma_space = np.linspace(0.05, 0.4, 100)
 fig, ax = plt.subplots()
-ax.plot(sigma_space, interpolate.splev(sigma_space, sigma2curr_step))
+ax.plot(sigma_space, sigma2curr_step(sigma_space), label="Interpoaltion")
+ax.plot(stds, np.linspace(1, 1000, 1000), label="Closed Form")
+ax.legend()
 ax.grid(True)
-ax.set_xlabel("Gaussian Noise Variance")
+ax.set_xlabel("Standard Deviation of Gaussian Noise")
 ax.set_ylabel("Optimal Starting Step Number for Denoising")
 plt.savefig("interpolation.png")
 
-img_id = 0
-level = 1
-noise_type = 'g'
-clean = io.imread(f"./samples/clean/{img_id}.jpg").astype(float) / 255
-noisy_img = np.clip(clean + np.random.normal(0, level, (256, 256, 3)), a_min=0., a_max=1.)
-print(np.average(clean))
-print(np.average(noisy_img))
-plt.imshow(noisy_img)
-plt.show()
-x = torch.Tensor([noisy_img.transpose([2, 0, 1])]).to(DEVICE)
-curr_step = 160
-denoised = diffusion.denoise(1, x=x, curr_step=curr_step, n_steps=curr_step)[0, ...].cpu().detach().numpy().transpose([1,2,0])
-print(calc_psnr_hvsm(denoised, clean))
-print(calc_ssim(denoised, clean))
-plt.imshow(denoised)
-plt.show()
 
-# betas = np.linspace(0.0001, 0.02, 1000)
-# alphas = 1.0-betas
-# alphas_cumprod = np.cumprod(alphas, axis=0)
-# alphas_cumprod_prev = np.append(1.0, alphas_cumprod[:-1])
-# posterior_variance = betas*(1.0-alphas_cumprod_prev) / (1.0-alphas_cumprod)
-# sqrt_recip_alphas_cumprod = np.sqrt(1. / alphas_cumprod)
-# sqrt_recipm1_alphas_cumprod = np.sqrt(1. / alphas_cumprod - 1)
-# posterior_mean_coef1 = betas * np.sqrt(alphas_cumprod_prev) / (1. - alphas_cumprod)
-# posterior_mean_coef2 = (1. - alphas_cumprod_prev) * np.sqrt(alphas) / (1. - alphas_cumprod)
-#
-# def get_noise_level(t):
-#     s = 1
-#     for i in range(999, t-1, -1):
-#         s = s / alphas[i] - (1-alphas[i])**2/alphas_cumprod[i]/alphas[i] + betas[i]
-#         print(s)
-#     return s
-# print(get_noise_level(150))
+# ----------------------------- Validation of Interpolation -----------------------------
+# validate_sigmas = [0.3, 0.6, 0.9]
+# validate_curr_steps = interpolate.splev(validate_sigmas, sigma2curr_step)
+# img_id = 4
+# noise_type = 'g'
+# for i in range(3):
+#     level = validate_sigmas[i]
+#     curr_step = int(validate_curr_steps[i])
+#     print(level, curr_step)
+#     clean = io.imread(f"./samples/clean/{img_id}.jpg").astype(float) / 255
+#     noisy_img = np.clip(clean + np.random.normal(0, level, (256, 256, 3)), a_min=0., a_max=1.)
+#     print("noisy psnr", calc_psnr_hvsm(noisy_img, clean))
+#     print("noisy ssim", calc_ssim(noisy_img, clean))
+#     plt.imsave(f"./samples/noisy/interpolation/{img_id}-{level}-g.png", noisy_img)
+#     x = torch.Tensor([noisy_img.transpose([2, 0, 1])]).to(DEVICE)
+#     denoised = diffusion.denoise(1, x=x, curr_step=curr_step, n_steps=curr_step)[0, ...].cpu().detach().numpy().transpose([1,2,0])
+#     print("denoised psnr", calc_psnr_hvsm(denoised, clean))
+#     print("denoised ssim", calc_ssim(denoised, clean))
+#     plt.imsave(f"./samples/ddpm-denoised/interpolation/{img_id}-{level}-g.png", np.clip(denoised, a_min=0., a_max=1.))
+
+# 0.3 98
+# noisy psnr 16.89995718387649
+# noisy ssim 0.19186292970704055
+# denoised psnr 20.25897614829583
+# denoised ssim 0.75785273
+# 0.6 145
+# noisy psnr 12.838676855677493
+# noisy ssim 0.08770467277230924
+# denoised psnr 14.918611463618781
+# denoised ssim 0.6321207
+# 0.9 156
+# noisy psnr 11.276436440979648
+# noisy ssim 0.05716424572656217
+# denoised psnr 12.936433970509771
+# denoised ssim 0.56312585
+
+
