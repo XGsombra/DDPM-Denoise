@@ -36,11 +36,11 @@ for level in LEVELS:
         noisy_images = np.copy(clean_images)
         noisy_images += level * np.random.randn(image_num, SIZE, SIZE, CHANNEL_NUM)
         if not GAUSSIAN_NOISE:
-            noisy_images += np.random.poisson(LAMBDA, (image_num, SIZE, SIZE, CHANNEL_NUM))
+            noisy_images += np.random.poisson(level ** 2, (image_num, SIZE, SIZE, CHANNEL_NUM))
         # Save noisy images
         for i in range(image_num):
             plt.imsave(
-                os.path.join(NOISY_DIR, f"{i+5}-{round(level, 2)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg"),
+                os.path.join(NOISY_DIR, f"{i}-{round(level, 2)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg"),
                 np.clip(noisy_images[i], a_min=0., a_max=1.)
             )
     else:
