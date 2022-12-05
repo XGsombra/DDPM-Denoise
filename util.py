@@ -8,6 +8,7 @@ from psnr_hvsm import psnr_hvsm
 from imageio import imread
 from skimage.metrics import structural_similarity as compare_ssim
 import cv2 as cv
+from skimage.metrics import peak_signal_noise_ratio as compute_psnr
 
 
 def calc_psnr_hvsm(denoised, clean):
@@ -15,6 +16,9 @@ def calc_psnr_hvsm(denoised, clean):
     y_denoised = cv.cvtColor(denoised.astype('float32'), cv.COLOR_RGB2YUV)[..., 0]
     y_clean = cv.cvtColor(clean.astype('float32'), cv.COLOR_RGB2YUV)[..., 0]
     return psnr_hvsm(y_clean, y_denoised)
+
+def calc_psnr(denoised, clean):
+    return compute_psnr(clean, denoised)
 
 def calc_ssim(denoised, clean):
     # Convert to grayscale first

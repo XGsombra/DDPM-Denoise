@@ -16,8 +16,8 @@ import os
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 
 parser = argparse.ArgumentParser(description='Demo MPRNet')
-parser.add_argument('--input_dir', default='../samples/noisy/', type=str, help='Input images')
-parser.add_argument('--result_dir', default='../samples/mprnet-denoised/', type=str, help='Directory for results')
+parser.add_argument('--input_dir', default='../samples/noisy/validation', type=str, help='Input images')
+parser.add_argument('--result_dir', default='../samples/mprnet-denoised', type=str, help='Directory for results')
 parser.add_argument('--task', default="Denoising", type=str, help='Task to run')
 
 args = parser.parse_args()
@@ -85,6 +85,6 @@ for file_ in files:
     restored = img_as_ubyte(restored[0])
 
     f = os.path.splitext(os.path.split(file_)[-1])[0]
-    save_img((os.path.join(out_dir, f+'.png')), restored)
+    save_img((os.path.join(out_dir, f+'.jpg')), restored)
 
 print(f"Files saved at {out_dir}")
