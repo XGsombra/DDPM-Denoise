@@ -18,9 +18,10 @@ def get_spectrum_power(image):
     fourier_image = np.fft.fftn(image)
     fourier_amplitudes = np.abs(fourier_image)**2
 
-    kfreq = np.fft.fftfreq(npix) * npix
+    kfreq = np.fft.fftfreq(npix, 1/npix)
     kfreq2D = np.meshgrid(kfreq, kfreq)
     knrm = np.sqrt(kfreq2D[0]**2 + kfreq2D[1]**2)
+    print(kfreq2D[0].shape)
 
     knrm = knrm.flatten()
     fourier_amplitudes = fourier_amplitudes.flatten()
@@ -36,8 +37,8 @@ def get_spectrum_power(image):
 kvals_low, Abins_low = get_spectrum_power(image_low)
 kvals_high, Abins_high = get_spectrum_power(image_high)
 
-plt.loglog(kvals_low, Abins_low, label="low")
-plt.loglog(kvals_high, Abins_high, label="high")
+plt.loglog(kvals_low, Abins_low, label="Without HFC")
+plt.loglog(kvals_high, Abins_high, label="With HFC")
 plt.grid(True)
 plt.legend()
 plt.xlabel("$k$")

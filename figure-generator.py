@@ -9,7 +9,7 @@ from natsort import natsorted
 from pytorch_diffusion import Diffusion
 
 from constants import CLEAN_DIR, SIZE, CHANNEL_NUM, LEVELS, NOISY_DIR, GAUSSIAN_NOISE, DEVICE, MODEL, DDPM_DENOISED_DIR
-from util import calc_psnr_hvsm, calc_ssim
+from util import calc_psnr_hvsm, calc_ssim, calc_psnr
 
 from scipy import interpolate
 
@@ -230,23 +230,23 @@ level_to_curr_step = {0.05: 15, 0.1: 33, 0.2: 69, 0.4: 120}
 
 # ----------------------------- Interpolation vs closed form -----------------------------
 
-betas = np.linspace(0.0001, 0.02, 1000)
-alphas = 1.0-betas
-alphas_cumprod = np.cumprod(alphas, axis=0)
-stds = np.sqrt(1-alphas_cumprod)
-
-sigmas = [0.05, 0.1, 0.2, 0.4]
-curr_steps = [15, 33, 69, 120]
-sigma2curr_step = interpolate.interp1d(sigmas, curr_steps)
-sigma_space = np.linspace(0.05, 0.4, 100)
-fig, ax = plt.subplots()
-ax.plot(sigma_space, sigma2curr_step(sigma_space), label="Interpoaltion")
-ax.plot(stds, np.linspace(1, 1000, 1000), label="Closed Form")
-ax.legend()
-ax.grid(True)
-ax.set_xlabel("Standard Deviation of Gaussian Noise")
-ax.set_ylabel("Optimal Starting Step Number for Denoising")
-plt.savefig("interpolation.png")
+# betas = np.linspace(0.0001, 0.02, 1000)
+# alphas = 1.0-betas
+# alphas_cumprod = np.cumprod(alphas, axis=0)
+# stds = np.sqrt(1-alphas_cumprod)
+#
+# sigmas = [0.05, 0.1, 0.2, 0.4]
+# curr_steps = [15, 33, 69, 120]
+# sigma2curr_step = interpolate.interp1d(sigmas, curr_steps)
+# sigma_space = np.linspace(0.05, 0.4, 100)
+# fig, ax = plt.subplots()
+# ax.plot(sigma_space, sigma2curr_step(sigma_space), label="Interpoaltion")
+# ax.plot(stds, np.linspace(1, 1000, 1000), label="Closed Form")
+# ax.legend()
+# ax.grid(True)
+# ax.set_xlabel("Standard Deviation of Gaussian Noise")
+# ax.set_ylabel("Optimal Starting Step Number for Denoising")
+# plt.savefig("interpolation.png")
 
 
 # ----------------------------- Validation of Interpolation -----------------------------
@@ -286,3 +286,17 @@ plt.savefig("interpolation.png")
 # denoised ssim 0.56312585
 
 
+clean = io.imread(f"./samples/clean/4.jpg").astype(float) / 255
+noisy_img = io.imread(f"./samples/noisy/realistic/unprocess.jpg").astype(float) / 255
+print(np.std(noisy_img-clean))
+# print(calc_psnr(noisy_img, clean))  # 16.87135728981658
+# print(calc_psnr_hvsm(noisy_img, clean))   # 17.714713168601556
+# print(calc_ssim(noisy_img, clean))  # 0.4436537359259245
+x = torch.Tensor([noisy_img.transpose([2, 0, 1])]).to(DEVICE)
+curr_step = 75
+# denoised = diffusion.denoise(1, x=x, curr_step=curr_step, n_steps=curr_step)[0, ...].cpu().detach().numpy().transpose([1,2,0])
+# plt.imsave("realistic_denoised.jpg", np.clip(denoised, a_min=0., a_max=1.))
+denoised = io.imread(f"./samples/mprnet-denoised/unprocess.jpg").astype(float) / 255
+print(calc_psnr(denoised, clean))
+print(calc_psnr_hvsm(denoised, clean))
+print(calc_ssim(denoised, clean))
