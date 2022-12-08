@@ -7,8 +7,7 @@ from natsort import natsorted
 from glob import glob
 import os
 from util import calc_psnr_hvsm, calc_ssim
-from constants import CHANNEL_NUM, SIZE, CLEAN_DIR, NOISY_DIR, MODEL, DEVICE, SAVE_NOISY, GAUSSIAN_NOISE, LEVELS, \
-    CLEAN_VAL_DIR, NOISY_VAL_DIR, LAMBDA
+from constants import CHANNEL_NUM, SIZE, CLEAN_DIR, NOISY_DIR, MODEL, DEVICE, SAVE_NOISY, GAUSSIAN_NOISE, LEVELS
 
 # Load the DDPM model
 print("Loading Model...")
@@ -28,6 +27,7 @@ opt_step_nums = []
 manual_tuning = False
 manual_tuning = True
 
+# For each level of noise, tune the corresponding step t
 for level in LEVELS:
     opt_sig_curr_steps = []
     opt_sig_step_nums = []
@@ -44,7 +44,7 @@ for level in LEVELS:
                 np.clip(noisy_images[i], a_min=0., a_max=1.)
             )
     else:
-        # Load noising image previously saved and convert to tensor
+        # Load noisy image previously saved and convert to tensor
         noisy_images = np.zeros_like(clean_images)
         print("Loading noisy images...")
         for i in range(image_num):
@@ -52,12 +52,14 @@ for level in LEVELS:
                 os.path.join(NOISY_DIR, f"{i}-{round(level, 2)}-{'g' if GAUSSIAN_NOISE else 'p'}.jpg")
             ).astype(float) / 255
         noisy_images = torch.Tensor(noisy_images.transpose([0, 3, 1, 2])).to(DEVICE)
+
         # Initialize the range
         opt_max_psnr = 0
         opt_curr_step = 0
         opt_step_num = 0
         start = 10
         curr_steps = range(10, 1000, 5)
+
         # Loop and tune
         for curr_step in curr_steps:
             max_psnr = 0
@@ -100,6 +102,7 @@ for level in LEVELS:
         opt_sig_step_nums.append(opt_step_num)
     opt_curr_steps.append(opt_sig_curr_steps)
     opt_step_nums.append(opt_sig_step_nums)
+
 # Save the parameters
 np.savetxt("curr_steps.csv", np.array(opt_curr_steps), delimiter=',')
 np.savetxt("step_nums.csv", np.array(opt_step_nums), delimiter=',')
