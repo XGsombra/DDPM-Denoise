@@ -292,11 +292,11 @@ print(np.std(noisy_img-clean))
 # print(calc_psnr(noisy_img, clean))  # 16.87135728981658
 # print(calc_psnr_hvsm(noisy_img, clean))   # 17.714713168601556
 # print(calc_ssim(noisy_img, clean))  # 0.4436537359259245
-x = torch.Tensor([noisy_img.transpose([2, 0, 1])]).to(DEVICE)
-curr_step = 75
+# x = torch.Tensor([noisy_img.transpose([2, 0, 1])]).to(DEVICE)
+# curr_step = 150
 # denoised = diffusion.denoise(1, x=x, curr_step=curr_step, n_steps=curr_step)[0, ...].cpu().detach().numpy().transpose([1,2,0])
 # plt.imsave("realistic_denoised.jpg", np.clip(denoised, a_min=0., a_max=1.))
-denoised = io.imread(f"./samples/mprnet-denoised/unprocess.jpg").astype(float) / 255
+denoised = io.imread(f"./samples/bilateral-denoised/unprocess.jpg").astype(float) / 255
 print(calc_psnr(denoised, clean))
 print(calc_psnr_hvsm(denoised, clean))
 print(calc_ssim(denoised, clean))
